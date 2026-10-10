@@ -18,7 +18,22 @@ project_init () {
         echo "[$PREFIX] $START_DIR already has content, skipping init"
         return
     fi
-    [ -z "${GIT_REPO}" ] && echo "[$PREFIX] No GIT_REPO specified" && echo "Example file. Have questions? Join us at https://community.coder.com" > $START_DIR/coder.txt || git clone $GIT_REPO $START_DIR
+    if [ -z "${GIT_REPO}" ]; then
+        echo "[$PREFIX] No GIT_REPO specified"
+        echo "Example file. Have questions? Join us at https://community.coder.com" > "$START_DIR/coder.txt"
+        return
+    fi
+    # git refuses to clone into a directory that isn't completely empty, and
+    # $START_DIR already contains ext4's lost+found on a fresh volume - so
+    # clone into a scratch directory first and move the result into place.
+    tmp_clone="$(mktemp -d)"
+    if git clone "$GIT_REPO" "$tmp_clone"; then
+        cp -a "$tmp_clone/." "$START_DIR/"
+        echo "[$PREFIX] Cloned $GIT_REPO into $START_DIR"
+    else
+        echo "[$PREFIX] git clone of $GIT_REPO failed"
+    fi
+    rm -rf "$tmp_clone"
 }
 
 # add rclone config and start rclone, if supplied
