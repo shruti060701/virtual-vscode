@@ -11,7 +11,10 @@ mkdir -p $START_DIR
 # lives on a persistent volume, so on every boot after the first, prior work is
 # already there and a fresh `git clone` into a non-empty directory would just fail.
 project_init () {
-    if [ -n "$(ls -A "$START_DIR" 2>/dev/null)" ]; then
+    # A freshly-mounted ext4 volume (as Railway volumes are) ships its own
+    # lost+found directory, so a plain `ls -A` would see "content" on a
+    # genuinely empty volume and skip init forever. Ignore it explicitly.
+    if [ -n "$(ls -A "$START_DIR" 2>/dev/null | grep -v '^lost+found$')" ]; then
         echo "[$PREFIX] $START_DIR already has content, skipping init"
         return
     fi
