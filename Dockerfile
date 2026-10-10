@@ -1,5 +1,6 @@
 # Start from the code-server Debian base image
-FROM codercom/code-server:4.9.0
+# Pinned to the latest stable release (see https://github.com/coder/code-server/releases)
+FROM codercom/code-server:4.141.0
 
 USER coder
 

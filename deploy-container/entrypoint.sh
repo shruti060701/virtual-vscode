@@ -7,7 +7,14 @@ PREFIX="deploy-code-server"
 mkdir -p $START_DIR
 
 # function to clone the git repo or add a user's first file if no repo was specified.
+# Skips entirely if $START_DIR already has content - on Railway this directory
+# lives on a persistent volume, so on every boot after the first, prior work is
+# already there and a fresh `git clone` into a non-empty directory would just fail.
 project_init () {
+    if [ -n "$(ls -A "$START_DIR" 2>/dev/null)" ]; then
+        echo "[$PREFIX] $START_DIR already has content, skipping init"
+        return
+    fi
     [ -z "${GIT_REPO}" ] && echo "[$PREFIX] No GIT_REPO specified" && echo "Example file. Have questions? Join us at https://community.coder.com" > $START_DIR/coder.txt || git clone $GIT_REPO $START_DIR
 }
 
