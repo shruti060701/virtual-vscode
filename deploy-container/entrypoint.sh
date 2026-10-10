@@ -5,6 +5,10 @@ START_DIR="${START_DIR:-/home/coder/project}"
 PREFIX="deploy-code-server"
 
 mkdir -p $START_DIR
+# A mounted Railway volume comes back owned by root, but code-server runs as
+# the unprivileged `coder` user - without this, every write into $START_DIR
+# (including git clone / cp below) fails with "Permission denied".
+sudo chown -R coder:coder "$START_DIR"
 
 # function to clone the git repo or add a user's first file if no repo was specified.
 # Skips entirely if $START_DIR already has content - on Railway this directory
@@ -27,11 +31,10 @@ project_init () {
     # $START_DIR already contains ext4's lost+found on a fresh volume - so
     # clone into a scratch directory first and move the result into place.
     tmp_clone="$(mktemp -d)"
-    if git clone "$GIT_REPO" "$tmp_clone"; then
-        cp -a "$tmp_clone/." "$START_DIR/"
+    if git clone "$GIT_REPO" "$tmp_clone" && cp -a "$tmp_clone/." "$START_DIR/"; then
         echo "[$PREFIX] Cloned $GIT_REPO into $START_DIR"
     else
-        echo "[$PREFIX] git clone of $GIT_REPO failed"
+        echo "[$PREFIX] Failed to clone $GIT_REPO into $START_DIR"
     fi
     rm -rf "$tmp_clone"
 }
